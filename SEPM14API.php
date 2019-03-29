@@ -6,6 +6,7 @@ class SEPM14APIv1 {
 	private $token_expiration = 0;
 	private $client_secret;
 	private $client_id;
+	private $admin_id;
 	private $refresh_token;
 	private $ip;
 	private $api_server;
@@ -77,7 +78,8 @@ class SEPM14APIv1 {
 		{
 			$info = curl_getinfo($ch);
 			# 207 - Multi-status - I get that when I PATCH/move machines
-			if (!in_array($info["http_code"],[200,207])){
+			# 204 - Logout returns nothing
+			if (!in_array($info["http_code"],[200,204,207])){
 				$api_error_msg = $api_method." failed with code ".$info["http_code"];
 			}
 		} else {
@@ -97,7 +99,7 @@ class SEPM14APIv1 {
 		return json_decode($response, 1);
 	}
 
-	public function refreshToken()
+	public function refreshToken() 
 	{
 		$this->api_server_backup = $this->api_server;
 		$this->api_server = "https://".$this->ip.":8446/sepm";
@@ -106,6 +108,10 @@ class SEPM14APIv1 {
 		$auth_info = $this->call("/oauth/token?grant_type=refresh_token&client_id=".$this->client_id."&client_secret=".$this->client_secret."&refresh_token=".$this->refresh_token, "POST", $data);
 		$this->refresh_token = $auth_info['refresh_token'];
 		$this->token = $auth_info['access_token'];
+		$timeNow = time();
+		$this->token_expiration = $timeNow + intval($auth_info['tokenExpiration']);
+		echo "Token: ".$this->token."\r\n";
+		echo "Expires in: ".$auth_info['tokenExpiration']." seconds\r\n";	
 
 		$this->api_server = $this->api_server_backup;
 	}
@@ -117,12 +123,18 @@ class SEPM14APIv1 {
 		$auth_info = $this->call("/identity/authenticate", "POST", ["username"=>$user,"password"=>$pass,"domain"=>$domain]);
 		$this->client_secret = $auth_info['clientSecret'];
 		$this->client_id = $auth_info['clientId'];
+		$this->admin_id = $auth_info['adminId'];
 		$this->refresh_token = $auth_info['refreshToken'];
 		$this->token = $auth_info['token'];
 		echo "Token: ".$this->token."\r\n";
 		echo "Expires in: ".$auth_info['tokenExpiration']." seconds\r\n";
 		$timeNow = time();
 		$this->token_expiration = $timeNow + intval($auth_info['tokenExpiration']);
+	}
+
+	public function logOut()
+	{
+		$this->call("/identity/logout", "POST", ["adminId"=>$this->admin_id,"token"=>$this->token]);
 	}
 
 }

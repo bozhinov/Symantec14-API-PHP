@@ -20,4 +20,6 @@ foreach($hwkeys as $hwkey){
 
 }
 
+$api->logOut();
+
 ?>
