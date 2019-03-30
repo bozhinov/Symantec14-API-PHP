@@ -5,7 +5,7 @@
 include("SEPM14API.php");
 
 # AUTH
-$api = new SEPM14APIv1("127.0.0.1");
+$api = new SEPM14API("127.0.0.1");
 $api->authenticate("admin", 'XXXX');
 
 # MOVE 
@@ -52,5 +52,7 @@ foreach($_MOVE as $pc){
 		"hardwareKey" => $pc[0]
 	]]);
 }
+
+$api->logOut();
 
 ?>

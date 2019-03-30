@@ -5,7 +5,7 @@
 include("SEPM14API.php");
 
 # AUTH
-$api = new SEPM14APIv1("127.0.0.1");
+$api = new SEPM14API("127.0.0.1");
 $api->authenticate("admin", 'XXXX');
 
 # ADMINS
@@ -32,5 +32,7 @@ foreach($admins as $admin){
 	$api->call("/sepm/api/v1/admin-users", "POST", $params);
 
 }
+
+$api->logOut();
 
 ?>

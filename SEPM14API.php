@@ -1,6 +1,6 @@
 <?php
 
-class SEPM14APIv1 {
+class SEPM14API {
 
 	private $token = NULL;
 	private $token_expiration = 0;
