@@ -4,23 +4,22 @@ class SEPM14API {
 
 	private $token = NULL;
 	private $token_expiration = 0;
-	private $client_secret;
-	private $client_id;
-	private $admin_id;
-	private $refresh_token;
+	private $auth = [];
 	private $ip;
 	private $api_server;
-	private $counter;
+	private $counter = 0;
+
+	public $throttle_threshold = 50;
+	public $throttle_window = 1;
 
 	function __construct($ip = "127.0.0.1")
 	{
 		if (!filter_var($ip, FILTER_VALIDATE_IP) === false) {
-			$this->api_server =  "https://".$ip.":8446/sepm/api/v1";
+			$this->api_server = "https://".$ip.":8446/sepm/api/v1";
 			$this->ip = $ip;
 		} else {
 			die("API error: invalid IP address for server");
 		}
-		$this->counter = 0;
 	}
 
 	public function call($api_method, $http_method = "GET", $data = NULL)
@@ -32,15 +31,15 @@ class SEPM14API {
 		# Changing these should help bypass that limit and the need for that counter
 		# Problem is I run 14.2.1031 (latest as of March 2019) and it does not work for me
 
-		if ($this->counter == 49){
+		if ($this->counter == $this->throttle_threshold - 1){
 			$this->counter = 0;
 			$timeNow = time();
 			if (($this->token_expiration - $timeNow)  < 160) {
 				echo "Token expired. Refreshing ..\r\n";
 				$this->refreshToken();
 			}
-			echo "Waiting for 61 seconds..\r\n";
-			sleep(61);
+			echo "Waiting for ".strval(($this->throttle_window * 60) + 1)." seconds..\r\n";
+			sleep(($this->throttle_window * 60) + 1);
 		} else {
 			$this->counter++;
 		}
@@ -104,14 +103,14 @@ class SEPM14API {
 		$this->api_server_backup = $this->api_server;
 		$this->api_server = "https://".$this->ip.":8446/sepm";
 
-		$data = ["client_id" => $this->client_id, "client_secret" => $this->client_secret, "refresh_token" => $this->refresh_token];
-		$auth_info = $this->call("/oauth/token?grant_type=refresh_token&client_id=".$this->client_id."&client_secret=".$this->client_secret."&refresh_token=".$this->refresh_token, "POST", $data);
-		$this->refresh_token = $auth_info['refresh_token'];
-		$this->token = $auth_info['access_token'];
+		$data = ["client_id" => $this->auth['clientId'], "client_secret" => $this->auth['clientSecret'], "refresh_token" => $this->auth['refreshToken']];
+		$refresh = $this->call("/oauth/token?grant_type=refresh_token&client_id=".$this->auth['clientId']."&client_secret=".$this->auth['clientSecret']."&refresh_token=".$this->auth['refreshToken'], "POST", $data);
+
 		$timeNow = time();
-		$this->token_expiration = $timeNow + intval($auth_info['tokenExpiration']);
+		$this->token = $refresh['access_token'];
+		$this->token_expiration = $timeNow + intval($refresh['tokenExpiration']);
 		echo "Token: ".$this->token."\r\n";
-		echo "Expires in: ".$auth_info['tokenExpiration']." seconds\r\n";	
+		echo "Expires in: ".$refresh['tokenExpiration']." seconds\r\n";	
 
 		$this->api_server = $this->api_server_backup;
 	}
@@ -120,21 +119,18 @@ class SEPM14API {
 	{
 		$this->counter = 0;
 		$this->token = NULL;
-		$auth_info = $this->call("/identity/authenticate", "POST", ["username"=>$user,"password"=>$pass,"domain"=>$domain]);
-		$this->client_secret = $auth_info['clientSecret'];
-		$this->client_id = $auth_info['clientId'];
-		$this->admin_id = $auth_info['adminId'];
-		$this->refresh_token = $auth_info['refreshToken'];
-		$this->token = $auth_info['token'];
-		echo "Token: ".$this->token."\r\n";
-		echo "Expires in: ".$auth_info['tokenExpiration']." seconds\r\n";
+		$this->auth = $this->call("/identity/authenticate", "POST", ["username" => $user, "password" => $pass, "domain" => $domain]);
+
 		$timeNow = time();
-		$this->token_expiration = $timeNow + intval($auth_info['tokenExpiration']);
+		$this->token = $this->auth['token'];
+		$this->token_expiration = $timeNow + intval($this->auth['tokenExpiration']);
+		echo "Token: ".$this->token."\r\n";
+		echo "Expires in: ".$this->auth['tokenExpiration']." seconds\r\n";
 	}
 
 	public function logOut()
 	{
-		$this->call("/identity/logout", "POST", ["adminId"=>$this->admin_id,"token"=>$this->token]);
+		$this->call("/identity/logout", "POST", ["adminId" => $this->auth['adminId'], "token" => $this->token]);
 	}
 
 }
