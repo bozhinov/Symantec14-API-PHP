@@ -6,6 +6,7 @@ class SEPM14API {
 	private $token_expiration = 0;
 	private $auth = [];
 	private $ip;
+	private $port;
 	private $api_server;
 	private $counter = 0;
 
@@ -13,11 +14,12 @@ class SEPM14API {
 	public $throttle_threshold = 50;
 	public $throttle_window = 1;
 
-	function __construct($ip = "127.0.0.1")
+	function __construct($ip = "127.0.0.1", $port = "8446")
 	{
 		if (!filter_var($ip, FILTER_VALIDATE_IP) === false) {
-			$this->api_server = "https://".$ip.":8446/sepm/api/v1";
+			$this->api_server = "https://".$ip.":".$port."/sepm/api/v1";
 			$this->ip = $ip;
+			$this->port = $port;
 		} else {
 			die("API error: invalid IP address for server");
 		}
@@ -109,7 +111,7 @@ class SEPM14API {
 	public function refreshToken() 
 	{
 		$this->api_server_backup = $this->api_server;
-		$this->api_server = "https://".$this->ip.":8446/sepm";
+		$this->api_server = "https://".$this->ip.":".$this->port."/sepm";
 
 		$data = ["client_id" => $this->auth['clientId'], "client_secret" => $this->auth['clientSecret'], "refresh_token" => $this->auth['refreshToken']];
 		$refresh = $this->call("/oauth/token?grant_type=refresh_token&client_id=".$this->auth['clientId']."&client_secret=".$this->auth['clientSecret']."&refresh_token=".$this->auth['refreshToken'], "POST", $data);
@@ -189,6 +191,10 @@ class SEPM14API {
 					} else {
 						$this->log("SEPM version < 14.2 - Not tested!");
 					}
+					break;
+				case "scm.rmmwebservices.port":
+					$this->log("REST service port is: ".$val);
+					$this->port = $val;
 					break;
 			}
 		}
