@@ -174,12 +174,21 @@ class SEPM14API {
 					}
 					break;
 				case "scm.web.service.rest.throttle.threshold":
-					$this->log("Throttling threshold is :".$val);
+					$this->log("Throttling threshold is: ".$val);
 					$this->throttle_threshold = intval($val);
 					break;
 				case "scm.web.service.rest.throttle.window.mins":
-					$this->log("Throttling window is :".$val);
+					$this->log("Throttling window is: ".$val);
 					$this->throttle_window = intval($val);
+					break;
+				case "scm.server.version":
+					# API updates separatelly but anyway
+					$this->log("SEPM version is: ".$val);
+					if (version_compare($val, "14.2") >= 0){
+						$this->log("SEPM version > 14.2 - OK. Good!");
+					} else {
+						$this->log("SEPM version < 14.2 - Not tested!");
+					}
 					break;
 			}
 		}
