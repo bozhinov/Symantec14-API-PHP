@@ -88,8 +88,13 @@ class SEPM14API {
 			$info = curl_getinfo($ch);
 			# 207 - Multi-status - I get that when I PATCH/move machines
 			# 204 - Logout returns nothing
-			if (!in_array($info["http_code"],[200,204,207])){
-				$api_error_msg = $api_method." failed with code ".$info["http_code"];
+			if ($info["http_code"] != 200){
+				if (
+					!($info["http_code"] == 204 && $api_method == "/identity/logout") &&
+					!($info["http_code"] == 207 && $http_method == "PATCH")
+				){
+					$api_error_msg = $api_method." failed with code ".$info["http_code"];
+				}
 			}
 		} else {
 			$http_error_msg = curl_error($ch);
