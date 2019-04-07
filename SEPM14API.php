@@ -146,6 +146,12 @@ class SEPM14API {
 	/* cmd/php.exe would need to be elevated for this to work */
 	public function autoConfig()
 	{
+		# is PHP x86 ?
+		if (PHP_INT_SIZE === 4){
+			$this->log("Autoconfig requires a x64 version of PHP");
+			return;
+		}
+
 		try {
 			$sepm_path = (new COM('WScript.Shell'))->regRead('HKEY_LOCAL_MACHINE\SOFTWARE\Symantec\InstalledApps\Reporting');
 		} catch (com_exception $e){
