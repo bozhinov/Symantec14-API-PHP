@@ -149,21 +149,21 @@ class SEPM14API {
 		# is PHP x86 ?
 		if (PHP_INT_SIZE === 4){
 			$this->log("Autoconfig requires a x64 version of PHP");
-			return;
+			return false;
 		}
 
 		try {
 			$sepm_path = (new COM('WScript.Shell'))->regRead('HKEY_LOCAL_MACHINE\SOFTWARE\Symantec\InstalledApps\Reporting');
 		} catch (com_exception $e){
 			$this->log("Failed to obtain SEPM path from the registry");
-			return;
+			return false;
 		}
 
 		$sepm_config = $sepm_path."\\tomcat\\etc\\conf.properties";
 
 		if (!is_readable($sepm_config)){
 			$this->log("conf.properties does not exist or is not readable");
-			return;
+			return false;
 		}
 
 		$config = file($sepm_config, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -204,6 +204,8 @@ class SEPM14API {
 					break;
 			}
 		}
+		
+		return true;
 	}
 
 }
