@@ -9,6 +9,7 @@ class SEPM14API {
 	private $api_server;
 	private $counter = 0;
 
+	public $throttle_enabled = true;
 	public $throttle_threshold = 50;
 	public $throttle_window = 1;
 
@@ -22,26 +23,33 @@ class SEPM14API {
 		}
 	}
 
+	function log($msg)
+	{
+		echo $msg."\r\n";
+	}
+
+	function wait()
+	{
+		if ($this->throttle_enabled){
+			$this->log("Waiting for ".strval(($this->throttle_window * 60) + 1)." seconds..");
+			sleep(($this->throttle_window * 60) + 1);
+		}
+	}
+
 	public function call($api_method, $http_method = "GET", $data = NULL)
 	{
-		# C:\Program Files (x86)\Symantec\Symantec Endpoint Protection Manager\tomcat\etc\conf.properties
-		# scm.web.service.rest.throttle.threshold=50
-		# scm.web.service.rest.throttle.window.mins=1
-		
-		# Changing these should help bypass that limit and the need for that counter
-		# Problem is I run 14.2.1031 (latest as of March 2019) and it does not work for me
-
 		if ($this->counter == $this->throttle_threshold - 1){
 			$this->counter = 0;
-			$timeNow = time();
-			if (($this->token_expiration - $timeNow)  < 160) {
-				echo "Token expired. Refreshing ..\r\n";
-				$this->refreshToken();
-			}
-			echo "Waiting for ".strval(($this->throttle_window * 60) + 1)." seconds..\r\n";
-			sleep(($this->throttle_window * 60) + 1);
+			$this->wait();
 		} else {
 			$this->counter++;
+		}
+
+		$timeNow = time();
+		if (($this->token_expiration - $timeNow)  < 160) {
+			$this->log("Token expired. Refreshing ..");
+			$this->refreshToken();
+			$this->wait();
 		}
 
 		$header_array = ["Content-Type: application/json"];
@@ -109,8 +117,8 @@ class SEPM14API {
 		$timeNow = time();
 		$this->token = $refresh['access_token'];
 		$this->token_expiration = $timeNow + intval($refresh['tokenExpiration']);
-		echo "Token: ".$this->token."\r\n";
-		echo "Expires in: ".$refresh['tokenExpiration']." seconds\r\n";	
+		$this->log("Token: ".$this->token);
+		$this->log("Expires in: ".$refresh['tokenExpiration']." seconds");	
 
 		$this->api_server = $this->api_server_backup;
 	}
@@ -124,13 +132,57 @@ class SEPM14API {
 		$timeNow = time();
 		$this->token = $this->auth['token'];
 		$this->token_expiration = $timeNow + intval($this->auth['tokenExpiration']);
-		echo "Token: ".$this->token."\r\n";
-		echo "Expires in: ".$this->auth['tokenExpiration']." seconds\r\n";
+		$this->log("Token: ".$this->token);
+		$this->log("Expires in: ".$this->auth['tokenExpiration']." seconds");
 	}
 
 	public function logOut()
 	{
 		$this->call("/identity/logout", "POST", ["adminId" => $this->auth['adminId'], "token" => $this->token]);
+	}
+
+	/* cmd/php.exe would need to be elevated for this to work */
+	public function autoConfig()
+	{
+		try {
+			$sepm_path = (new COM('WScript.Shell'))->regRead('HKEY_LOCAL_MACHINE\SOFTWARE\Symantec\InstalledApps\Reporting');
+		} catch (com_exception $e){
+			$this->log("Failed to obtain SEPM path from the registry");
+			return;
+		}
+
+		$sepm_config = $sepm_path."\tomcat\etc\conf.properties";
+
+		if (!is_readable($sepm_config)){
+			$this->log("conf.properties does not exist or is not readable");
+			return;
+		}
+
+		$config = file($sepm_config, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+		$this->throttle_enabled = false;
+
+		foreach($config as $line){
+
+			list($cfg, $val) = explode("=", $line);
+
+			switch($cfg){
+				case "scm.web.service.rest.throttle.enabled":
+					if (strtoupper($val) == "TRUE"){
+						$this->log("Throttling is enabled");
+						$this->throttle_enabled = true;
+					}
+					break;
+				case "scm.web.service.rest.throttle.threshold":
+					$this->log("Throttling threshold is :".$val);
+					$this->throttle_threshold = intval($val);
+					break;
+				case "scm.web.service.rest.throttle.window.mins":
+					$this->log("Throttling window is :".$val);
+					$this->throttle_window = intval($val);
+					break;
+			}
+		}
 	}
 
 }
