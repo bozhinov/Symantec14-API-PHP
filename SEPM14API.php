@@ -159,7 +159,7 @@ class SEPM14API {
 			return;
 		}
 
-		$sepm_config = $sepm_path."\tomcat\etc\conf.properties";
+		$sepm_config = $sepm_path."\\tomcat\\etc\\conf.properties";
 
 		if (!is_readable($sepm_config)){
 			$this->log("conf.properties does not exist or is not readable");
