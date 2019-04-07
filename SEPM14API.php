@@ -30,7 +30,7 @@ class SEPM14API {
 		echo $msg."\r\n";
 	}
 
-	function wait()
+	public function wait()
 	{
 		if ($this->throttle_enabled){
 			$this->log("Waiting for ".strval(($this->throttle_window * 60) + 1)." seconds..");

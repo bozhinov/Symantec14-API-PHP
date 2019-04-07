@@ -36,8 +36,7 @@ if (count($_MOVE) == 0){
 	exit();
 }
 
-echo "Waiting for 61 seconds..\r\n";
-sleep(61);
+$api->wait();
 
 $i = 0;
 $all = count($_MOVE);
