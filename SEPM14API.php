@@ -93,9 +93,9 @@ class SEPM14API {
 			if ($info["http_code"] != 200){
 
 				if ($info["http_code"] == 429) { # Too many requests
-					$this->log("The number of queries reached the threshold");
+					$this->log("The number of calls reached the threshold");
 					$this->wait();
-					$this->log("Retrying the last query");
+					$this->log("Retrying the last call");
 					curl_close($ch);
 					$this->call($api_method, $http_method, $data);
 					return;
