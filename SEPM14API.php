@@ -230,8 +230,14 @@ class SEPM14API {
 					$this->log("REST service port is: ".$val);
 					$this->port = $val;
 					break;
+				case "scm.server.name":
+					$this->log("REST service host is: ".$val);
+					$this->ip = gethostbyname($val);
+					break;
 			}
 		}
+
+		$this->api_server = "https://".$this->ip.":".$this->port."/sepm/api/v1";
 
 		return true;
 	}
