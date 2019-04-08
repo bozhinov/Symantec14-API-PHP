@@ -177,9 +177,9 @@ class SEPM14API {
 			} catch (com_exception $e){
 				$this->log("Failed to obtain SEPM path from registry");
 				return false;
-			} finally {
-				unset($com);
 			}
+		} finally {
+			unset($com);
 		}
 
 		$sepm_config = $sepm_path."tomcat\\etc\\conf.properties";
