@@ -32,6 +32,7 @@ class SEPM14API {
 
 	public function wait()
 	{
+		$this->counter = 0;
 		if ($this->throttle_enabled){
 			$this->log("Waiting for ".strval(($this->throttle_window * 60) + 1)." seconds..");
 			sleep(($this->throttle_window * 60) + 1);
@@ -41,7 +42,6 @@ class SEPM14API {
 	public function call($api_method, $http_method = "GET", $data = NULL)
 	{
 		if ($this->counter == $this->throttle_threshold - 1){
-			$this->counter = 0;
 			$this->wait();
 		} else {
 			$this->counter++;
@@ -91,6 +91,16 @@ class SEPM14API {
 			# 207 - Multi-status - I get that when I PATCH/move machines
 			# 204 - Logout returns nothing
 			if ($info["http_code"] != 200){
+
+				if ($info["http_code"] == 429) { # Too many requests
+					$this->log("The number of queries reached the threshold");
+					$this->wait();
+					$this->log("Retrying the last query");
+					curl_close($ch);
+					$this->call($api_method, $http_method, $data);
+					return;
+				}
+
 				if (
 					!($info["http_code"] == 204 && $api_method == "/identity/logout") &&
 					!($info["http_code"] == 207 && $http_method == "PATCH")
@@ -134,7 +144,6 @@ class SEPM14API {
 
 	public function authenticate($user, $pass, $domain = "")
 	{
-		$this->counter = 0;
 		$this->token = NULL;
 		$this->auth = $this->call("/identity/authenticate", "POST", ["username" => $user, "password" => $pass, "domain" => $domain]);
 
@@ -186,7 +195,7 @@ class SEPM14API {
 		$this->throttle_enabled = false;
 
 		foreach($config as $line){
-			
+
 			if (substr($line, 0, 1) == "#") {
 				continue;
 			}
@@ -223,7 +232,7 @@ class SEPM14API {
 					break;
 			}
 		}
-		
+
 		return true;
 	}
 
