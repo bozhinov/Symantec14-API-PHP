@@ -47,15 +47,17 @@ class SEPM14API {
 			$this->counter++;
 		}
 
-		$timeNow = time();
-		if (($this->token_expiration - $timeNow)  < 160) {
-			$this->log("Token expired. Refreshing ..");
-			$this->refreshToken();
-			$this->wait();
+		if (!is_null($this->token)){
+			$timeNow = time();
+			if (($this->token_expiration - $timeNow)  < 160) {
+				$this->log("Token expired. Refreshing ..");
+				$this->refreshToken();
+				$this->wait();
+			}
 		}
 
 		$header_array = ["Content-Type: application/json"];
-		if ($this->token != NULL){
+		if (!is_null($this->token)){
 			$header_array[] = "Authorization: Bearer ".$this->token;
 		}
 
