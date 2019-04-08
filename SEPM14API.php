@@ -160,13 +160,21 @@ class SEPM14API {
 		}
 
 		try {
-			$sepm_path = (new COM('WScript.Shell'))->regRead('HKEY_LOCAL_MACHINE\SOFTWARE\Symantec\InstalledApps\Reporting');
+			$com = new COM('WScript.Shell');
+			$sepm_path = $com->regRead('HKEY_LOCAL_MACHINE\SOFTWARE\Symantec\InstalledApps\Reporting');
 		} catch (com_exception $e){
-			$this->log("Failed to obtain SEPM path from the registry");
-			return false;
+			try {
+				$sepm_path = $com->regRead('HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Symantec\InstalledApps\Reporting');
+			} catch (com_exception $e){
+				$this->log("Failed to obtain SEPM path from registry");
+				return false;
+			} finally {
+				unset($com);
+			}
 		}
 
-		$sepm_config = $sepm_path."\\tomcat\\etc\\conf.properties";
+		$sepm_config = $sepm_path."tomcat\\etc\\conf.properties";
+		$this->log("Found config: ".$sepm_config);
 
 		if (!is_readable($sepm_config)){
 			$this->log("conf.properties does not exist or is not readable");
@@ -178,6 +186,10 @@ class SEPM14API {
 		$this->throttle_enabled = false;
 
 		foreach($config as $line){
+			
+			if (substr($line, 0, 1) == "#") {
+				continue;
+			}
 
 			list($cfg, $val) = explode("=", $line);
 
