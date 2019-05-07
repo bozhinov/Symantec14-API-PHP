@@ -29,7 +29,7 @@ foreach($admins as $admin){
 		"authenticationMethod" => 2
 	];
 
-	$api->call("/sepm/api/v1/admin-users", "POST", $params);
+	$api->call("/admin-users", "POST", $params);
 
 }
 
