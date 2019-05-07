@@ -14,18 +14,18 @@ class SEPM14API {
 	public $throttle_threshold = 50;
 	public $throttle_window = 1;
 
-	function __construct($ip = "127.0.0.1", $port = "8446")
+	function __construct(string $ip = "127.0.0.1", string $port = "8446")
 	{
 		if (!filter_var($ip, FILTER_VALIDATE_IP) === false) {
 			$this->api_server = "https://".$ip.":".$port."/sepm/api/v1";
 			$this->ip = $ip;
 			$this->port = $port;
 		} else {
-			die("API error: invalid IP address for server");
+			die("API error: invalid IP address (".$ip.") for server");
 		}
 	}
 
-	function log($msg)
+	function log(string $msg)
 	{
 		echo $msg."\r\n";
 	}
@@ -39,7 +39,7 @@ class SEPM14API {
 		}
 	}
 
-	public function call($api_method, $http_method = "GET", $data = NULL)
+	public function call(string $api_method, string $http_method = "GET", array $data = [])
 	{
 		if ($this->counter == $this->throttle_threshold - 1){
 			$this->wait();
@@ -142,7 +142,7 @@ class SEPM14API {
 		$this->api_server = $this->api_server_backup;
 	}
 
-	public function authenticate($user, $pass, $domain = "")
+	public function authenticate(string $user, string $pass, string $domain = "")
 	{
 		$this->token = NULL;
 		$this->auth = $this->call("/identity/authenticate", "POST", ["username" => $user, "password" => $pass, "domain" => $domain]);
