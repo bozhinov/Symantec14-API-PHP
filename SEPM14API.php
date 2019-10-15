@@ -97,8 +97,7 @@ class SEPM14API {
 					$this->wait();
 					$this->log("Retrying the last call");
 					curl_close($ch);
-					$this->call($api_method, $http_method, $data);
-					return;
+					return $this->call($api_method, $http_method, $data);
 				}
 
 				if (
